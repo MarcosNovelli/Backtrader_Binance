@@ -1,6 +1,6 @@
 .env
 teststrategies.py
-price_list.json
+*.json
 
 # Windows thumbnail cache files
 Thumbs.db
