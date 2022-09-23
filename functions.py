@@ -9,7 +9,7 @@ import pandas as pd
 '''
 
 
-def store_ticker_prices_backtest(symbol:str, TF:str, lookback:int=1000):
+def store_ticker_prices_backtest(symbol:str, TF:str, lookback:int=1000) -> pd.DataFrame:
     
     # Devuelve hasta el current candle, con los parametros que tenga en el momento
     klines:list = client.get_historical_klines(symbol, TF, limit=lookback, klines_type=HistoricalKlinesType.FUTURES)
