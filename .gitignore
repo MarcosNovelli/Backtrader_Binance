@@ -1,4 +1,6 @@
 .env
+teststrategies.py
+
 # Windows thumbnail cache files
 Thumbs.db
 Thumbs.db:encryptable

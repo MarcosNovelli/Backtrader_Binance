@@ -22,6 +22,13 @@ def store_ticker_prices_backtest(symbol:str, TF:str, lookback:int=1000):
     
     df.columns = ["Date", "Open", "High", "Low", "Close", "Volume"]
     df["Adj_Close"] = df["Close"]
+
+    df.Open      = df.Open.astype("float")
+    df.High      = df.High.astype("float")
+    df.Low       = df.Low.astype("float")
+    df.Close     = df.Close.astype("float")
+    df.Volume    = df.Volume.astype("float")
+
     df.index = [dt.datetime.fromtimestamp(x/1000.0) for x in df.Date]
 
     print(f"Added {symbol} info...")
