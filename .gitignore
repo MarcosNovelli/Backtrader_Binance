@@ -1,5 +1,5 @@
 .env
-.csv
+price_data.csv
 teststrategies.py
 price_list.json
 notas.txt
