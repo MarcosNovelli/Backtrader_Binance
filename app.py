@@ -1,7 +1,8 @@
 from config import client
 from functions import get_data_since, get_file_data
 import backtrader as bt
-from teststrategies import SmaCross, SupplyAndDemand, TestStrategy
+from teststrategies import SmaCross, TestStrategy
+from SandD_strat import SupplyAndDemand
 import datetime as dt
 import pandas as pd
 
