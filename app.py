@@ -5,12 +5,12 @@ from teststrategies import SmaCross, SupplyAndDemand, TestStrategy
 import datetime as dt
 import pandas as pd
 
-# Choose to download(1) or already downloaded data(0)
+# Choose to download(1) or use already downloaded data(0)
 download = 1
 
 # Both in seconds
-startTime = (dt.datetime(2021, 10, 13)).timestamp()
-# endTime = (dt.datetime(2022, 10, 9)).timestamp()
+startTime = (dt.datetime(2022, 9, 19)).timestamp()
+# endTime = (dt.datetime(2022, 10, 7)).timestamp()
 endTime = dt.datetime.now().timestamp()
 
 df = get_data_since("BTCUSDT", "1m", startTime, endTime) if download else get_file_data('price_data.csv')
