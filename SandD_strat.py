@@ -100,7 +100,6 @@ class SupplyAndDemand(bt.Strategy):
         
         # Detect RBD formation
         Rallybd = self.data.close[self.base_close] > self.data.close[-240]
-        print("Drop candle", self.data.open[self.third_candle_open], third_low, self.data.close[self.third_candle_close])
         rBased = self.data.open[self.base_open] < self.data.close[self.base_close]
         rbDrop = self.data.close[self.third_candle_close] < self.data.open[self.third_candle_open] and (self.data.open[self.third_candle_open] - self.data.close[self.third_candle_close]) >= ((self.data.close[self.base_close] - self.data.open[self.base_open]) * 1.5) and self.data.close[self.third_candle_close] < basing_low and self.data.close[self.third_candle_close] < first_low and self.data.close[self.third_candle_close] < minus_one_low and (self.data.close[self.third_candle_close] - third_low) * 1.15 < (self.data.open[self.third_candle_open] - self.data.close[self.third_candle_close])
         
@@ -111,9 +110,37 @@ class SupplyAndDemand(bt.Strategy):
         return RBD
     
     def check_RBR(self):
-        return
+
+        first_high = max(list(self.data.high.get(ago=-120, size=60)))
+        basing_high = max(list(self.data.high.get(ago=-60, size=60)))
+        third_high = max(list(self.data.high.get(ago=-1, size=60)))
+
+
+        Rallybr = self.data.open[self.first_candle_open] < self.data.close[self.first_candle_close] and self.data.close[self.first_candle_close] > self.data.close[self.first_candle_close - 60] and (basing_high - self.data.open[self.base_open]) * 1.5 + 0.0001 > (first_high - self.data.close[self.first_candle_close])
+        rBaser = self.data.open[self.base_open] > self.data.close[self.base_close]
+        rbRally = (third_high - self.data.close[self.third_candle_close]) < (self.data.close[self.third_candle_close] - self.data.open[self.third_candle_open]) and self.data.close[self.third_candle_close] > basing_high and (self.data.close[self.third_candle_close] - self.data.open[self.third_candle_open]) >= self.data.close[self.third_candle_close] * 0.005
+
+        RBR = Rallybr and rBaser and rbRally
+        
+        self.trade_type = "RBR" if RBR else self.trade_type
+
+
+        return RBR
 
     def check_DBR(self):
+
+        basing_high = max(list(self.data.high.get(ago=-60, size=60)))
+        third_high = max(list(self.data.high.get(ago=-1, size=60)))
+
+
+        Dropbr = self.data.open[self.first_candle_open] > self.data.close[self.first_candle_close] or self.data.open[self.first_candle_open - 60] > self.data.close[self.first_candle_close] or self.data.open[-240 ] > self.data.close[self.first_candle_close]
+        dBaser = self.data.open[self.base_open] > self.data.close[self.base_close] and basing_high < self.data.close[self.third_candle_close] and (basing_high - self.data.open[self.base_open]) < (self.data.open[self.base_open] - self.data.close[self.base_close])
+        dbRally = self.data.close[self.third_candle_close] > self.data.open[self.base_open] and (self.data.close[self.third_candle_close] - self.data.open[self.third_candle_open]) >= ((self.data.open[self.base_open] - self.data.close[self.base_close]) * 1.5) and (third_high - self.data.close[self.third_candle_close]) * 2 < (self.data.close[self.third_candle_close] - self.data.open[self.third_candle_open])        
+        
+        DBR = Dropbr and dBaser and dbRally
+        
+        self.trade_type = "DBR" if DBR else self.trade_type
+        
         return
 
     def next(self):
@@ -132,18 +159,24 @@ class SupplyAndDemand(bt.Strategy):
                 if len(self) % 60 == 0:
                     print("CHECKING FOR TRADE")
                     self.dbd = False#self.check_DBD()
-                    self.rbd = self.check_RBD()
+                    self.rbd = False#self.check_RBD()
 
-                    if self.dbd or self.rbd:
+                    self.rbr = self.check_RBR()
+
+                    if self.dbd or self.rbd or self.rbr:
                         print("Trade Found")
                         
+                        self.mainside = self.buy(exectype=bt.Order.Market, transmit=False)
+                        self.close_trade = self.sell(exectype=bt.Order.Market, transmit=True, parent=self.mainside)
+
+
                         # Order management
                         self.mainside = self.sell(exectype=bt.Order.Market, transmit=False)
 
                         # self.stop_order = self.buy(price=self.dataclose*1.01, size=self.mainside.size, exectype=bt.Order.Stop,
                         #     transmit=True, parent=self.mainside)
 
-                        self.close_trade = self.buy(exectype=bt.Order.Market, transmit=True, parent=self.mainside)
+                        # self.close_trade = self.buy(exectype=bt.Order.Market, transmit=True, parent=self.mainside)
                         
                         # stop = self.buy(trailpercent=0.05, size=mainside.size, exectype=bt.Order.StopTrail,
                         #     transmit=False, parent=mainside)

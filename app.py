@@ -7,12 +7,12 @@ import datetime as dt
 import pandas as pd
 
 # Choose to download(1) or use already downloaded data(0)
-download = 1
+download = 0
 
 # Both in seconds
-startTime = (dt.datetime(2022, 9, 19)).timestamp()
-# endTime = (dt.datetime(2022, 10, 7)).timestamp()
-endTime = dt.datetime.now().timestamp()
+startTime = (dt.datetime(2022, 9, 9)).timestamp()
+endTime = (dt.datetime(2022, 9, 20)).timestamp()
+# endTime = dt.datetime.now().timestamp()
 
 df = get_data_since("BTCUSDT", "1m", startTime, endTime) if download else get_file_data('price_data.csv')
 
