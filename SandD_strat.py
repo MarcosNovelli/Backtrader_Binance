@@ -133,7 +133,7 @@ class SupplyAndDemand(bt.Strategy):
         third_high = max(list(self.data.high.get(ago=-1, size=60)))
 
 
-        Dropbr = self.data.open[self.first_candle_open] > self.data.close[self.first_candle_close] or self.data.open[self.first_candle_open - 60] > self.data.close[self.first_candle_close] or self.data.open[-240 ] > self.data.close[self.first_candle_close]
+        Dropbr = self.data.open[self.first_candle_open] > self.data.close[self.first_candle_close] or self.data.open[self.first_candle_open - 60] > self.data.close[self.first_candle_close] or self.data.open[self.first_candle_open - 120] > self.data.close[self.first_candle_close]
         dBaser = self.data.open[self.base_open] > self.data.close[self.base_close] and basing_high < self.data.close[self.third_candle_close] and (basing_high - self.data.open[self.base_open]) < (self.data.open[self.base_open] - self.data.close[self.base_close])
         dbRally = self.data.close[self.third_candle_close] > self.data.open[self.base_open] and (self.data.close[self.third_candle_close] - self.data.open[self.third_candle_open]) >= ((self.data.open[self.base_open] - self.data.close[self.base_close]) * 1.5) and (third_high - self.data.close[self.third_candle_close]) * 2 < (self.data.close[self.third_candle_close] - self.data.open[self.third_candle_open])        
         
@@ -141,7 +141,7 @@ class SupplyAndDemand(bt.Strategy):
         
         self.trade_type = "DBR" if DBR else self.trade_type
         
-        return
+        return DBR
 
     def next(self):
         # Log the closing price for reference
@@ -158,12 +158,14 @@ class SupplyAndDemand(bt.Strategy):
 
                 if len(self) % 60 == 0:
                     print("CHECKING FOR TRADE")
-                    self.dbd = False#self.check_DBD()
-                    self.rbd = False#self.check_RBD()
+                    self.dbd = self.check_DBD()
+                    self.rbd = self.check_RBD()
+
 
                     self.rbr = self.check_RBR()
+                    self.dbr = self.check_DBR()
 
-                    if self.dbd or self.rbd or self.rbr:
+                    if self.dbd or self.rbd or self.rbr or self.dbr:
                         print("Trade Found")
                         
                         self.mainside = self.buy(exectype=bt.Order.Market, transmit=False)
@@ -171,7 +173,7 @@ class SupplyAndDemand(bt.Strategy):
 
 
                         # Order management
-                        self.mainside = self.sell(exectype=bt.Order.Market, transmit=False)
+                        # self.mainside = self.sell(exectype=bt.Order.Market, transmit=False)
 
                         # self.stop_order = self.buy(price=self.dataclose*1.01, size=self.mainside.size, exectype=bt.Order.Stop,
                         #     transmit=True, parent=self.mainside)
