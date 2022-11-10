@@ -11,7 +11,7 @@ class SupplyAndDemand(bt.Strategy):
     def log(self, txt, dt=None):
         ''' Logging function fot this strategy'''
         dt = dt or self.datas[0].datetime.date(0)
-        print('%s, %s' % (dt.isoformat(), txt))
+        #print('%s, %s' % (dt.isoformat(), txt))
     
     def __init__(self):
         self.dataclose = self.datas[0].close
@@ -71,7 +71,9 @@ class SupplyAndDemand(bt.Strategy):
         self.order = None
 
     def notify_trade(self, trade):
-        self.trade_history = self.trade_history.append({'Date':bt.num2date(trade.dtopen), 'Status':trade.status, 'Price':trade.price, 'PNL':trade.pnl, 'Commission':trade.commission, 'Trade Type':self.trade_type}, ignore_index=True)
+        new_info = pd.DataFrame({'Date':[bt.num2date(trade.dtopen)], 'Status':[trade.status], 'Price':[trade.price], 'PNL':[trade.pnl], 'Commission':[trade.commission], 'Trade Type':[self.trade_type]})
+        self.trade_history = pd.concat([self.trade_history, new_info])
+        
         if not trade.isclosed:
             return
 
@@ -168,7 +170,7 @@ class SupplyAndDemand(bt.Strategy):
                 # Check if we might like to be in a trade every hour
 
                 if len(self) % 60 == 0:
-                    print("CHECKING FOR TRADE")
+                    # print("CHECKING FOR TRADE")
                     self.dbd = self.check_DBD()
                     self.rbd = self.check_RBD()
 
@@ -177,7 +179,7 @@ class SupplyAndDemand(bt.Strategy):
                     self.dbr = self.check_DBR()
 
                     if self.dbd or self.rbd:
-                        print("Trade Found")
+                        # print("Trade Found")
 
                         # Order management
                         self.mainside = self.sell(exectype=bt.Order.Market, transmit=False)
@@ -187,7 +189,7 @@ class SupplyAndDemand(bt.Strategy):
                   
                         # Strategy management
                         self.price_executed = self.datas[0].close[0]
-                        print(self.price_executed, "PRICE EXECUTED")
+                        # print(self.price_executed, "PRICE EXECUTED")
 
                     elif self.rbr or self.dbr:
                         
@@ -198,30 +200,32 @@ class SupplyAndDemand(bt.Strategy):
                         
                         # Strategy management
                         self.price_executed = self.datas[0].close[0]
-                        print(self.price_executed, "PRICE EXECUTED")
+                        # print(self.price_executed, "PRICE EXECUTED")
 
                     self.last_bar_checked = len(self) 
                     
         if self.position and self.stop_order.status != 5:
             
+            trailing_trigger = 0.005 
+
             # Set trailing stops
 
             if self.dbd or self.rbd:
                 # Change stop for trailing stop once .05% is reached in profit
-                if self.datas[0].low <= (self.price_executed * 0.995):
+                if self.datas[0].low <= (self.price_executed * (1 - trailing_trigger)):
                     
                     self.cancel(self.stop_order)
                     
                     self.trailing_stop = self.buy(trailpercent=0.005, size=self.mainside.size, exectype=bt.Order.StopTrail)
-                    print("TRAILING STOP IN PLACE")
+                    # print("TRAILING STOP IN PLACE")
             
             if self.rbr or self.dbr:
-                if self.datas[0].high >= (self.price_executed * 1.005):
+                if self.datas[0].high >= (self.price_executed * (1 + trailing_trigger)):
                     
                     self.cancel(self.stop_order)
                     
                     self.trailing_stop = self.sell(trailpercent=0.005, size=self.mainside.size, exectype=bt.Order.StopTrail)
 
-                    print("TRAILING STOP IN PLACE")
+                    # print("TRAILING STOP IN PLACE")
         
         return
