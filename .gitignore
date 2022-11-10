@@ -1,9 +1,13 @@
 .env
+.csv
+.txt
 price_data.csv
+1_year_price_data.csv
 teststrategies.py
 price_list.json
 notas.txt
 getmillionbars.py
+Trade_History.csv
 
 
 # Windows thumbnail cache files

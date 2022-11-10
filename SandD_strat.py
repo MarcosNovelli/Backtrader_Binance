@@ -1,4 +1,5 @@
 import backtrader as bt
+import pandas as pd
 
 class SupplyAndDemand(bt.Strategy):
     '''
@@ -15,6 +16,8 @@ class SupplyAndDemand(bt.Strategy):
     def __init__(self):
         self.dataclose = self.datas[0].close
         self.datalow = self.datas[0].low
+
+        self.trade_history = pd.DataFrame(columns=["Date", "Status", "Price", "PNL", "Commission", "Trade Type"])
 
         self.order = None
         self.buyprice = None
@@ -59,7 +62,7 @@ class SupplyAndDemand(bt.Strategy):
                           order.executed.value,
                           order.executed.comm,
                           self.trade_type))
-
+           
             self.bar_executed = len(self)
 
         elif order.status in [order.Canceled, order.Margin, order.Rejected]:
@@ -68,11 +71,19 @@ class SupplyAndDemand(bt.Strategy):
         self.order = None
 
     def notify_trade(self, trade):
+        self.trade_history = self.trade_history.append({'Date':bt.num2date(trade.dtopen), 'Status':trade.status, 'Price':trade.price, 'PNL':trade.pnl, 'Commission':trade.commission, 'Trade Type':self.trade_type}, ignore_index=True)
         if not trade.isclosed:
             return
 
         self.log('OPERATION PROFIT, GROSS %.2f, NET %.2f, Type %s' %
                  (trade.pnl, trade.pnlcomm, self.trade_type))
+        
+
+        self.trade_history.to_csv('Trade_History.csv')
+
+    def print_trade_history(self):
+        print(self.trade_history)
+        return
 
     def check_DBD(self):
 
@@ -165,38 +176,52 @@ class SupplyAndDemand(bt.Strategy):
                     self.rbr = self.check_RBR()
                     self.dbr = self.check_DBR()
 
-                    if self.dbd or self.rbd or self.rbr or self.dbr:
+                    if self.dbd or self.rbd:
                         print("Trade Found")
-                        
-                        self.mainside = self.buy(exectype=bt.Order.Market, transmit=False)
-                        self.close_trade = self.sell(exectype=bt.Order.Market, transmit=True, parent=self.mainside)
-
 
                         # Order management
-                        # self.mainside = self.sell(exectype=bt.Order.Market, transmit=False)
+                        self.mainside = self.sell(exectype=bt.Order.Market, transmit=False)
 
-                        # self.stop_order = self.buy(price=self.dataclose*1.01, size=self.mainside.size, exectype=bt.Order.Stop,
-                        #     transmit=True, parent=self.mainside)
+                        self.stop_order = self.buy(price=self.dataclose*1.01, size=self.mainside.size, exectype=bt.Order.Stop,
+                            transmit=True, parent=self.mainside)
+                  
+                        # Strategy management
+                        self.price_executed = self.datas[0].close[0]
+                        print(self.price_executed, "PRICE EXECUTED")
 
-                        # self.close_trade = self.buy(exectype=bt.Order.Market, transmit=True, parent=self.mainside)
+                    elif self.rbr or self.dbr:
                         
-                        # stop = self.buy(trailpercent=0.05, size=mainside.size, exectype=bt.Order.StopTrail,
-                        #     transmit=False, parent=mainside)
+                        self.mainside = self.buy(exectype=bt.Order.Market, transmit=False)
                         
+                        self.stop_order = self.sell(price=self.dataclose*0.99   , size=self.mainside.size, exectype=bt.Order.Stop,
+                            transmit=True, parent=self.mainside)
                         
                         # Strategy management
                         self.price_executed = self.datas[0].close[0]
                         print(self.price_executed, "PRICE EXECUTED")
 
                     self.last_bar_checked = len(self) 
-        
-        # if self.position:
+                    
+        if self.position and self.stop_order.status != 5:
             
-        #     if self.dbd and self.stop_order.status != 5:
-        #         # Change stop for trailing stop once .05% is reached in profit
-        #         if self.datas[0].low <= (self.price_executed * 0.995):
-        #             self.cancel(self.stop_order)
-        #             trailing_stop = self.buy(price=self.datas[0].low, trailpercent=0.005, size=self.mainside.size, exectype=bt.Order.StopTrail)
-        #             print("TRAILING STOP IN PLACE")
+            # Set trailing stops
 
-            return
+            if self.dbd or self.rbd:
+                # Change stop for trailing stop once .05% is reached in profit
+                if self.datas[0].low <= (self.price_executed * 0.995):
+                    
+                    self.cancel(self.stop_order)
+                    
+                    self.trailing_stop = self.buy(trailpercent=0.005, size=self.mainside.size, exectype=bt.Order.StopTrail)
+                    print("TRAILING STOP IN PLACE")
+            
+            if self.rbr or self.dbr:
+                if self.datas[0].high >= (self.price_executed * 1.005):
+                    
+                    self.cancel(self.stop_order)
+                    
+                    self.trailing_stop = self.sell(trailpercent=0.005, size=self.mainside.size, exectype=bt.Order.StopTrail)
+
+                    print("TRAILING STOP IN PLACE")
+        
+        return
