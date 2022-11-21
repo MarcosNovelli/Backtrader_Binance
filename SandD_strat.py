@@ -1,5 +1,6 @@
 import backtrader as bt
 import pandas as pd
+from app import stop, target
 
 class SupplyAndDemand(bt.Strategy):
     '''
@@ -178,14 +179,18 @@ class SupplyAndDemand(bt.Strategy):
                     self.rbr = self.check_RBR()
                     self.dbr = self.check_DBR()
 
+
                     if self.dbd or self.rbd:
                         # print("Trade Found")
 
                         # Order management
                         self.mainside = self.sell(exectype=bt.Order.Market, transmit=False)
 
-                        self.stop_order = self.buy(price=self.dataclose*1.01, size=self.mainside.size, exectype=bt.Order.Stop,
-                            transmit=True, parent=self.mainside)
+                        self.stop_order = self.buy(price=self.dataclose*(1 + stop), size=self.mainside.size, exectype=bt.Order.Stop,
+                            transmit=False, parent=self.mainside)
+
+                        self.target_order = self.buy(price=self.dataclose*(1 - target), size=self.mainside.size, exectype=bt.Order.Limit, transmit=True, parent=self.mainside)
+
                   
                         # Strategy management
                         self.price_executed = self.datas[0].close[0]
@@ -195,9 +200,11 @@ class SupplyAndDemand(bt.Strategy):
                         
                         self.mainside = self.buy(exectype=bt.Order.Market, transmit=False)
                         
-                        self.stop_order = self.sell(price=self.dataclose*0.99   , size=self.mainside.size, exectype=bt.Order.Stop,
-                            transmit=True, parent=self.mainside)
+                        self.stop_order = self.sell(price=self.dataclose*(1 - stop), size=self.mainside.size, exectype=bt.Order.Stop,
+                            transmit=False, parent=self.mainside)
                         
+                        self.target_order = self.sell(price=self.dataclose*(1 + target), size=self.mainside.size, exectype=bt.Order.Limit, transmit=True, parent=self.mainside)
+
                         # Strategy management
                         self.price_executed = self.datas[0].close[0]
                         # print(self.price_executed, "PRICE EXECUTED")
@@ -206,14 +213,14 @@ class SupplyAndDemand(bt.Strategy):
                     
         if self.position and self.stop_order.status != 5:
             
-            trailing_trigger = 0.005 
+            trailing_trigger = 0.01 
 
             # Set trailing stops
 
             if self.dbd or self.rbd:
                 # Change stop for trailing stop once .05% is reached in profit
                 if self.datas[0].low <= (self.price_executed * (1 - trailing_trigger)):
-                    
+                   
                     self.cancel(self.stop_order)
                     
                     self.trailing_stop = self.buy(trailpercent=0.005, size=self.mainside.size, exectype=bt.Order.StopTrail)

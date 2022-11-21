@@ -2,6 +2,7 @@
 *.csv
 *.txt
 *.json
+*.xlsx
 teststrategies.py
 getmillionbars.py
 
